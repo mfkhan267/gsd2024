@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('git checkout') {
+            steps {
+              checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/mfkhan267/my_jenkins_app.git']]])
+              sh "pwd"
+              sh "ls -ltr"
+              dir("${env.WORKSPACE}/Tetris-Game-App"){
+                    sh "pwd"
+                    sh "ls -ltr"
+                        }
+                    }
+                              }
+        stage('build docker image'){
+            steps{
+    	        dir("${env.WORKSPACE}/Tetris-Game-App"){
+                    sh "pwd"
+                    sh "ls -ltr"
+                    sh 'docker build -t acr267.azurecr.io/tetris:$BUILD_NUMBER .'
+                        }
+            }
+        }
+        stage('push image'){
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'acr', passwordVariable: 'password', usernameVariable: 'username')]) {
+                sh 'echo ${password} | docker login acr267.azurecr.io --username ${username} --password-stdin'
+                sh 'docker push acr267.azurecr.io/tetris:$BUILD_NUMBER'
+                }
+            }
+        }
+        stage('Install Azure CLI'){
+            steps{
+                sh '''
+                echo "Installing Azure CLI"
+                cat /etc/os-release
+                hostname
+                hostnamectl
+                sudo apt-get update
+                curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+                az --version
+                '''
+            }
+        }
+        stage('deploy web app'){
+            steps{
+                withEnv(['AZURE_CLIENT_ID=<Insert Azure App Client ID>', 'AZURE_CLIENT_SECRET=<Insert Azure Client Secret>', 'AZURE_TENANT_ID=<Insert Azure Tenant ID>']) {
+                sh 'az login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}'
+                }
+                withCredentials([usernamePassword(credentialsId: 'acr', passwordVariable: 'password', usernameVariable: 'username')]) {
+                // sh 'az webapp config container set --name tetris-webapp267 --resource-group jenkins267 --docker-custom-image-name acr267.azurecr.io/tetris:latest --docker-registry-server-url https://acr267.azurecr.io --docker-registry-server-user ${username} --docker-registry-server-password ${password}'
+                // sh 'az webapp config container set --name tetris-webapp267 --resource-group jenkins267 --docker-custom-image-name mfk267/catcontainer:latest'
+                sh 'az webapp config container set --name tetris-webapp267 --resource-group jenkins267 --docker-custom-image-name mfk267/gsd:latest'
+                }
+            }
+        }
+    }
+}
