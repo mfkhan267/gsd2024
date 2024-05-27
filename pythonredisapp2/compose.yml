@@ -8,8 +8,6 @@ services:
   web-fe:
     build: .
     command: python app.py
-    deploy:
-      replicas: 10
     ports:
       - target: 8080
         published: 5001
