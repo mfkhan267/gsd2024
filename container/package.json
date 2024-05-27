@@ -2,7 +2,7 @@
   "name": "hello-docker",
   "version": "1.0.0",
   "description": "Web server showing host that responded",
-  "author": "@nigelpoulton",
+  "author": "@ferozekhan267oa",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
